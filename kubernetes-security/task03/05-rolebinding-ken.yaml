@@ -4,9 +4,8 @@ metadata:
   name: ken_view
   namespace: dev
 subjects:
-- kind: User # Group, ServiceAccount
+- kind: ServiceAccount
   name: ken # имя чувствительно к регистру
-  apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role # явно указываем Role или ClusterRole
   name: view

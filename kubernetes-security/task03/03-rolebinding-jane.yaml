@@ -4,9 +4,8 @@ metadata:
   name: jane_admin
   namespace: dev
 subjects:
-- kind: User # Group, ServiceAccount
+- kind: ServiceAccount
   name: jane # имя чувствительно к регистру
-  apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role # явно указываем Role или ClusterRole
   name: admin
