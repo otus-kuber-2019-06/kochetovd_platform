@@ -4,12 +4,12 @@ metadata:
   name: kubernetes-dashboard
   namespace: kube-system
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
   - http:
       paths:
-      - path: /dashboard
+      - path: /dashboard(/|$)(.*)
         backend:
           serviceName: kubernetes-dashboard-svc
           servicePort: 9090
