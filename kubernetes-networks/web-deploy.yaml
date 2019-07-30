@@ -10,7 +10,7 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 100%
+      maxUnavailable: 0
       maxSurge: 0
   template:
     metadata:
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: dkochetov/kubernetesintro_web:latest
+        image: dkochetov/kubernetesintro_web:20190716
         readinessProbe: # Добавим проверку готовности
           httpGet: # веб-сервера отдавать
             path: /index.html # контент

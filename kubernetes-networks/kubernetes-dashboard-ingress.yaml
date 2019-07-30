@@ -11,5 +11,5 @@ spec:
       paths:
       - path: /dashboard(/|$)(.*)
         backend:
-          serviceName: kubernetes-dashboard-svc
+          serviceName: kubernetes-dashboard
           servicePort: 9090
