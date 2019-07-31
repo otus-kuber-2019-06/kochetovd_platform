@@ -16,6 +16,7 @@ kochetovd Platform repository
 
 ### Ответы на вопросы
 > Разберитесь почему все pod в namespace kube-system восстановились после удаления.
+
 kube-apiserver это статический pod, который при удалении создается немедленно.
 Для pod-а core-dns имеет установленный priorityClassName в system-cluster-critical, что показывает, что данный pod является критическим для кластера и этот pod всегда перепланируется.
 
@@ -24,19 +25,21 @@ kube-apiserver это статический pod, который при удал
 ## Домашнее задание 2
 ### Выполнено
 TASK01:
-  - Создал SA bob, Сделал clusterrolebinding для sa bob и clusterrole admin
-  - Создал SA dave без связки с ролью
+  - Создал SA bob, Сделал clusterrolebinding для sa bob и clusterrole admin;
+  - Создал SA dave без связки с ролью.
+
 TASK02:
-  - Создал ns prometheus
-  - Создал SA carol в ns prometheus
-  - Сделал cluster роль, позволяющую делать get, list, watch в отношении Pods всего кластера
-  - Сделал clusterrolebindind даной роль и ns prometheus
+  - Создал ns prometheus;
+  - Создал SA carol в ns prometheus;
+  - Сделал cluster роль, позволяющую делать get, list, watch в отношении Pods всего кластера;
+  - Сделал clusterrolebindind даной роль и ns prometheus.
+
 TASK03:
-  - Создал ns dev
-  - Создал sa jane в ns dev
-  - Создал role admin, Сделал rolebinding sa jane и role admin
-  - Создал sa ken в ns dev
-  - Создал role view, Сделал rolebinding sa jane и role admin
+  - Создал ns dev;
+  - Создал sa jane в ns dev;
+  - Создал role admin, Сделал rolebinding sa jane и role admin;
+  - Создал sa ken в ns dev;
+  - Создал role view, Сделал rolebinding sa jane и role admin.
 
 
 
@@ -58,11 +61,12 @@ TASK03:
 
 ### Ответы на вопросы
 > Попробуйте разные варианты деплоя с крайними значениями maxSurge и maxUnavailable (оба 0, оба 100%, 0 и 100%)
+
 если maxSurge и maxUnavailable выставить в 0 - то получаем ошибку невозможности выполнения деплоя, вида 
 ```
 The Deployment "web" is invalid: spec.strategy.rollingUpdate.maxUnavailable: Invalid value: intstr.IntOrString{Type:0, IntVal:0, StrVal:""}: may not be 0 when `maxSurge` is 0
 ```
-При других вариантах все работает корректно, т.к. maxUnavailable указывает максимальное количество подов, которое может быть недоступно в процессе обновления, а maxSurge - максимальное количество подов, которое может быть создано от желаемое количество подов, указанного в `replicas`;
+При других вариантах все работает корректно, т.к. maxUnavailable указывает максимальное количество подов, которое может быть недоступно в процессе обновления, а maxSurge - максимальное количество подов, которое может быть создано от желаемое количество подов, указанного в `replicas`.
 
 
 
