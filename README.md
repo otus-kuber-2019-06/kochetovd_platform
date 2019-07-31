@@ -58,6 +58,55 @@ TASK03:
 - Создал манифест для Headless-сервиса  web-svc-headless.yaml;
 - Создал манифест Ingress  web-ingress.yaml для доступа к подам через Headless-сервис.
 
+### Задание со *
+> Сделайте сервис LoadBalancer, который откроет доступ к CoreDNS снаружи кластера (позволит получать записи из CoreDNS через внешний IP. Например nslookup web.default.cluster.local 172.17.255.10).
+
+- Созданы манифесты Service типа LoadBalancer для CoreDNS, позволяющие получить доступ к 53 TCP, UDP портам снаружи кластера.
+Для проверки нужно выполнить команды
+```
+kubectl apply -f core-dns-svc-lb-udp.yaml
+kubectl apply -f core-dns-svc-lb-tcp.yaml 
+```
+Затем проверить работу dns
+```
+$ nslookup web-svc.default.svc.cluster.local 172.17.255.3
+Server:		172.17.255.3
+Address:	172.17.255.3#53
+
+Name:	web-svc.default.svc.cluster.local
+Address: 172.17.0.6
+Name:	web-svc.default.svc.cluster.local
+Address: 172.17.0.3
+Name:	web-svc.default.svc.cluster.local
+Address: 172.17.0.4
+```
+
+> добавьте доступ к kubernetesdashboard через наш Ingress-прокси (сервис должен быть доступен через префикс /dashboard)
+
+- Создал манифест с ресурсом Ingress для предоставления доступа к kubernetes-dashboard извне кластера
+Для применения манифеста выполнить команду `kubectl apply -f kubernetes-dashboard-ingress.yaml`
+С помощью команды `kubectl  get ing -A` определить ip адрес назначений Ingress-у
+Перейти по ссылке https://<ip>/dashboard/
+
+> Реализуйте канареечное развертывание (перенаправление части трафика на выделенную группу подов по HTTPзаголовку). Документация . Естественно, что вам понадобятся 1-2 "канареечных" пода.
+
+- Создал манифесты canary-ns.yaml, canary-prod-ing.yaml, canary-canary-ing.yaml для реализации канареечного развертывания подов;
+- Применить манифест для создания namespace `kubectl apply -f canary-ns.yaml`;
+
+- Применить манифесты `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/docs/examples/http-svc.yaml -n echo-production` для развертывания приложения(Создается Deployment, Service) в ns echo-production
+- Применить манифест для деплоя Ingress для доступа к приложению в ns echo-production `kubectl apply -f canary-prod-ing.yaml -n echo-production`
+
+- Применить манифесты `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/docs/examples/http-svc.yaml -n echo-canary` для развертывания приложения(Создается Deployment, Service) в ns echo-canary
+- Применить манифест для деплоя Ingress, реализующего канареечное развертывание, для доступа к приложению в ns echo-canary `kubectl apply -f canary-canary-ing.yaml -n echo-canary`
+
+- Узнать ip адрес Ingress, выполнив команду `kubectl  get ing -A`. Добавить в hosts строку `<ip>	echo.com`
+- Для проверки выполнить в консоли запросы с помощью curl
+```
+curl echo.com
+curl --header "Canary-By-Header:always" echo.com
+```
+В первом случае, в выводе команды будет `pod namespace:	echo-production`, а во втором случае, `pod namespace:	echo-canary`
+
 
 ### Ответы на вопросы
 > Попробуйте разные варианты деплоя с крайними значениями maxSurge и maxUnavailable (оба 0, оба 100%, 0 и 100%)
