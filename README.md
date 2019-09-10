@@ -95,3 +95,53 @@ The Deployment "web" is invalid: spec.strategy.rollingUpdate.maxUnavailable: Inv
 ```
 
 
+
+<br><br>
+## Домашнее задание 5
+
+### Задание про kubectl debug
+- Установил kubectl-debug по инструкции
+- Попробовал выполнить трассировку
+```
+	bash-5.0# strace -c -p1
+	strace: test_ptrace_get_syscall_info: PTRACE_TRACEME: Operation not permitted
+	strace: attach: ptrace(PTRACE_ATTACH, 1): Operation not permitted
+```
+- Попробовал выполнить strace
+- Проверил capbilities у debug контенейра:
+```
+            "CapAdd": null,
+            "CapDrop": null,
+```
+- Установка ptrace и admin capbilities была реализована в агенте версии 0.1.1
+- Образ для контененра в файле https://raw.githubusercontent.com/aylei/kubectl-debug/master/scripts/agent_daemonset.yml используется версии 0.0.1
+- Изменил версию образа докер на latest - strace/agent_daemonset.yml
+- Применить изменения `kubectl apply -f strace/agent_daemonset.yml
+- Проверил трассировку
+```
+	bash-5.0# strace -c -p1
+	strace: Process 1 attached
+	Handling connection for 10027
+```
+
+
+
+Status:
+  Client Pod:          netperf-client-42010a800074
+  Server Pod:          netperf-server-42010a800074
+  Speed Bits Per Sec:  15039.62
+  Status:              Done
+Events:                <none>
+
+
+Events:
+  Type     Reason      Age    From                                                    Message
+  ----     ------      ----   ----                                                    -------
+  Normal   Scheduled   2m59s  default-scheduler                                       Successfully assigned default/netperf-server-42010a800074 to gke-your-first-cluster-1-pool-1-ca8e398d-fdhv
+  Normal   Pulling     2m58s  kubelet, gke-your-first-cluster-1-pool-1-ca8e398d-fdhv  pulling image "tailoredcloud/netperf:v2.7"
+  Normal   Pulled      2m57s  kubelet, gke-your-first-cluster-1-pool-1-ca8e398d-fdhv  Successfully pulled image "tailoredcloud/netperf:v2.7"
+  Normal   Created     2m57s  kubelet, gke-your-first-cluster-1-pool-1-ca8e398d-fdhv  Created container
+  Normal   Started     2m57s  kubelet, gke-your-first-cluster-1-pool-1-ca8e398d-fdhv  Started container
+  Warning  PacketDrop  2m55s  kube-iptables-tailer                                    Packet dropped when receiving traffic from 10.4.1.22
+  Warning  PacketDrop  46s    kube-iptables-tailer                                    Packet dropped when receiving traffic from client (10.4.1.22)
+
