@@ -1,0 +1,12 @@
+parameters:
+  carts:
+    replicas: 1
+    image: weaveworksdemos/carts:0.4.8
+    containerPort: 80
+  kapitan:
+    compile:
+      - output_path: manifests
+        output_type: yaml
+        input_type: jsonnet
+        input_paths:
+        - components/carts-jsonnet/main.jsonnet

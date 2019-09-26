@@ -1,0 +1,8 @@
+classes:
+- component.namespace
+
+parameters:
+  kapitan:
+    vars:
+      target: ${target_name}
+      namespace: ${namespace_name}

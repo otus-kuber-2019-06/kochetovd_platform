@@ -1,0 +1,8 @@
+classes:
+  - common
+  - component.carts-jsonnet
+  - component.carts-common
+
+parameters:
+  target_name: socks-shop-kapitan
+  namespace_name: socks-shop
