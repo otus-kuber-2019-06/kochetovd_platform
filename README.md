@@ -210,7 +210,7 @@ Events:
 <br><br>
 ## Домашнее задание 10
 
-#Подготовка
+###Подготовка
 - Установил клиента helm2 на локальную машину
 ```
 $ helm version --client
@@ -226,7 +226,7 @@ Server: &version.Version{SemVer:"v2.14.3", GitCommit:"0e7f3b6637f7af8fcfddb3d294
 ```
 
 
-#nginx-ingress
+###nginx-ingress
 - Выполнил деплой nginx-ingress использую  Helm 2 и tiller с правами cluster-admin
 ```
 $ helm list
@@ -235,7 +235,7 @@ nginx-ingress	1       	Thu Sep 26 11:35:22 2019	DEPLOYED	nginx-ingress-1.11.1	0.
 ```
 
 
-#cert-manager
+###cert-manager
 - Для создания сервисного аккаунта tiller-cert-manager в namespace cert-manager подготовил манифест kubernetes-templating/cert-manager/cert_manager_tiller_rbac.yaml
 - Применил манифесты ` kubectl apply -f kubernetes-templating/cert-manager/cert_manager_tiller_rbac.yaml `
 - Инициализировал helm в namespace cert-manager - `helm init --tiller-namespace cert-manager --service-account tiller-cert-manager`
@@ -258,7 +258,7 @@ ROLLING BACKError: Could not get information about the resource: clusterroles.rb
 `kubectl apply -f kubernetes-templating/cert-manager/clusterissue.yaml`
 
 
-#chartmuseum
+###chartmuseum
 - Установил плагин helm-tiller `helm plugin install https://github.com/rimusz/helm-tiller`
 - Кастомизировал установку chartmuseum kubernetes-templating/chartmuseum/values.yaml
 - Выполнил деплой с помощью helm-tiller
@@ -296,7 +296,7 @@ chartmuseum-chartmuseum-646949dc6b-mtx5b  1/1    Running  0         27s
 - chartmuseum доступен по адресу https://chartmuseum.34.69.15.120.nip.io/ с валиндным ssl сертификатом.
 
 
-#chartmuseum | Задание со ⭐
+###chartmuseum | Задание со ⭐
 - По умолчанию в chartmuseum отключено API, включается установкой переменной окружения  `DISABLE_API: false`. Актуальный список API - https://github.com/helm/chartmuseum
 - Загрузим в chartmuseum chart для frontend
 ```
@@ -330,7 +330,7 @@ chartmuseum/rabbitmq	0.1.0        	1.0        	A Helm chart for Kubernetes
 ```
 
 
-#harbor
+###harbor
 - Установил helm3
 ```
 $ helm3 version
@@ -352,7 +352,7 @@ harbor	harbor   	1       	2019-09-26 12:40:31.415542396 +0300 MSK	deployed	harbo
 - harbor доступен по адресу https://harbor.34.69.15.120.nip.io/ с валиндным ssl сертификатом.
 
 
-#Используем helmfile | Задание со ⭐
+###Используем helmfile | Задание со ⭐
 Подготовил helmfile - kubernetes-templating/helmfile/helmfile.yaml для установки nginx-ingress, cert-manager, harbor
 Для harbor создал файл kubernetes-templating/helmfile/values/harbor.yaml.gotmpl c параметрищацией переменных helm чарта
 Применим helmfile - `$ helmfile --environment production apply`
@@ -366,7 +366,7 @@ nginx-ingress	1       	Thu Sep 26 11:35:22 2019	DEPLOYED	nginx-ingress-1.11.1	0.
 ```
 
 
-#Создаем свой helm chart
+###Создаем свой helm chart
 - Средствами helm инициализируем структуру директории  `helm create kubernetes-templating/socks-shop`. Перенес файл all.yaml в директорию templates
 - Установил helm chart `helm upgrade --install socks-shop kubernetes-templating/socks-shop --namespace=socks-shop`
 - Проверил работу сайта по адресу - http://35.222.253.191:30001/
@@ -380,7 +380,7 @@ nginx-ingress	1       	Thu Sep 26 11:35:22 2019	DEPLOYED	nginx-ingress-1.11.1	0.
 - Обновил release socks-shop, сервис работает корректно https://shop.34.69.15.120.nip.io/index.html
 
 
-#Создаем свой helm chart | Задание со ⭐
+###Создаем свой helm chart | Задание со ⭐
 - Реализовал установку сервиса RabbitMQ через зависимости:
 - Создадим helm chart для микросервиса rabbitmq - helm create kubernetes-templating/rabbitmq
 - В директории kubernetes-templating/rabbitmq/template создадим файлы deployment.yaml, service.yaml с манифестами для rabbitmq извлеченными из файла all.yaml
@@ -389,7 +389,7 @@ nginx-ingress	1       	Thu Sep 26 11:35:22 2019	DEPLOYED	nginx-ingress-1.11.1	0.
 - Обновил release socks-shop, сервис работает корректно https://shop.34.69.15.120.nip.io/index.html
 
 
-#Работа с helm-secrets
+###Работа с helm-secrets
 - Установил зависимость sops
 - Установил plugin - `helm plugin install https://github.com/futuresimple/helm-secrets --version 2.0.2`
 - Сгенерировла ключ `gpg --full-generate-key`, проверил наличие ключа
@@ -444,7 +444,7 @@ hiddenValue
 ```
 
 
-#Проверка
+###Проверка
 - Создал архивы для chart `helm package . `
 - Загрузил архивы в репозиторий harbor
 - Создадим файл kubernetes-templating/repo.sh
@@ -465,7 +465,7 @@ templating/socks-shop	0.1.0        	1.0        	A Helm chart for Kubernetes
 ```
 
 
-#Kubecfg
+###Kubecfg
 - В директорию  kubernetes-templating/kubecfg вынес манифесты,описывающие service и deployment, для сервисов catalogue и payment
 - Установил kubecfg - https://github.com/bitnami/kubecfg
 `brew install kubecfg`
@@ -482,7 +482,7 @@ service и deployment, затем для конкретных сервисов �
 - Магазин снова работает корректно
 
 
-#Использовать решение на основе jsonnet | Задание со ⭐
+###Использовать решение на основе jsonnet | Задание со ⭐
 - Использлвал Kapitan - инструмент для управления сложными развертываниями с использованием jsonnet
 - Изучил документацию и пример использования Kapitan для kubernetes
 - Из all.yaml убрал Deployment и  Service для carts, Обновил socks-shop, корзина перестала работать
@@ -493,7 +493,7 @@ service и deployment, затем для конкретных сервисов �
 - После деплоя восстановилась работа корзины
 
 
-#Kustomize
+###Kustomize
 - Для кастомизации используем сервис `user`
 - В каталог kubernetes-templating/kustomize/base разместим манифесты для deployment и service. Также положим файл kustomization.yaml, в котором указывается за какие ресурсы отвечает Kustomize
 - В каталоге kubernetes-templating/kustomize/overlays создадим директории с параметрами для двух окружений - socks-shop и socks-shop-prod. В данных параметрах указывается в каком namespace создавать ресурсы, какой добавлять префикс к ресурсам, Какие нужно сгенерировать label и с каким тагом использовать image.
