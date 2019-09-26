@@ -1,0 +1,31 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  labels:
+    name: rabbitmq
+spec:
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        name: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:{{ .Values.image.tag }}
+        ports:
+        - containerPort: {{ .Values.service.targetPort }}
+        securityContext:
+          capabilities:
+            drop:
+              - all
+            add:
+              - CHOWN
+              - SETGID
+              - SETUID
+              - DAC_OVERRIDE
+          readOnlyRootFilesystem: true
+      nodeSelector:
+        beta.kubernetes.io/os: linux
