@@ -95,6 +95,23 @@ The Deployment "web" is invalid: spec.strategy.rollingUpdate.maxUnavailable: Inv
 ```
 
 
+<br><br>
+## Домашнее задание 5
+
+### Обычное домашнее задание
+- Подготовил кофиг для кластера с установкой опции VolumeSnapshatDataSource=true  `cluster/cluster.yaml`
+- Выполнил создание кластера с указанием конфига
+`kind create cluster --config cluster/cluster.yaml`
+- установил CSI Hostpath Driver https://github.com/kubernetes-csi/csi-driver-host-path выполнив скрипт 
+`deploy/kubernetes-1.15/deploy-hostpath.sh`
+- Создал StorageClass csi-hostpath-sc hw/storage_class.yml
+`kubectl apply -f hw/01-storage_class.yml`
+- Создал объект PVC c именем storage-pvc и StorageClass csi-hostpath-sc
+`kubectl apply -f hw/02-pvc_storageclass.yml`
+- Создал объект Pod c именем storage-pod и монтирующем pvc storage-pvc в каталог /data
+`kubectl apply -f hw/03-pod_storaclass.yml`
+
+
 
 <br><br>
 ## Домашнее задание 6
@@ -204,3 +221,9 @@ Events:
   Warning  PacketDrop  4m28s  kube-iptables-tailer                                    Packet dropped when receiving traffic from 10.4.1.34
   Warning  PacketDrop  2m17s  kube-iptables-tailer                                    Packet dropped when receiving traffic from netperf-client-42010a800074 (10.4.1.34)
 ```
+
+
+
+
+
+
