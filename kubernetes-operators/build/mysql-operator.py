@@ -17,6 +17,8 @@ def delete_success_jobs(mysql_instance_name):
     jobs = api.list_namespaced_job('default')
     for job in jobs.items:
         jobname = job.metadata.name
+        print (job.metadata.name)
+        print (job.status.succeeded)
         if (jobname == f"backup-{mysql_instance_name}-job"):
             if job.status.succeeded == 1:
                 api.delete_namespaced_job(jobname,'default',propagation_policy='Background')
@@ -29,6 +31,8 @@ def wait_until_job_end(jobname):
         time.sleep(1)
         jobs = api.list_namespaced_job('default')
         for job in jobs.items:
+            print (job.metadata.name)
+            print (job.status.succeeded)
             if job.metadata.name == jobname:
                 if job.status.succeeded == 1:
                     job_finished = True
@@ -66,16 +70,13 @@ def mysql_on_create(body, spec, **kwargs):
     api = kubernetes.client.AppsV1Api()
     api.create_namespaced_deployment('default', deployment)
 
-    kopf.event(body, type='Normal', reason='Logging', message=f"mysql deployment {body['metadata']['name']} created")
-    status = kubernetes.client.V1beta1CustomResourceDefinitionSpec()
-    status.subresources("Message: status")
-
+    restore_status = True
     # Пытаемся восстановиться из backup
     try:
         api = kubernetes.client.BatchV1Api()
         api.create_namespaced_job('default', restore_job)
     except kubernetes.client.rest.ApiException:
-        pass
+        restore_status = False
 
     # Cоздаем PVC и PV для бэкапов:
     try:
@@ -91,6 +92,13 @@ def mysql_on_create(body, spec, **kwargs):
         api.create_namespaced_persistent_volume_claim('default', backup_pvc)
     except kubernetes.client.rest.ApiException:
         pass
+
+    if restore_status:
+        kopf.event(body, type='Normal', reason='Logging', message="mysql created with restore-job")
+        return {'Message': "mysql created with restore-job"}
+    else:
+        kopf.event(body, type='Normal', reason='Logging', message=logger.info)
+        return {'Message': "mysql created without restore-job"}
 
 
 @kopf.on.delete('otus.homework', 'v1', 'mysqls')
@@ -110,3 +118,16 @@ def delete_object_make_backup(body, **kwargs):
     api.create_namespaced_job('default', backup_job)
     wait_until_job_end(f"backup-{name}-job")
     return {'message': "mysql and its children resources deleted"}
+
+
+@kopf.on.field('otus.homework', 'v1', 'mysqls', field='spec.database')
+def mysql_change_db_name(body, old, new, **kwargs):
+    name = body['metadata']['name']
+    image = body['spec']['image']
+    password = body['spec']['password']
+
+    renamedb_job = render_template('change-name-db-job.yml.j2', {'name': name,'image': image,'password': password,'database_old': old, 'database_new': new})
+    api = kubernetes.client.BatchV1Api()
+    api.create_namespaced_job('default', renamedb_job)
+    wait_until_job_end(f"renamedb-{name}-job")
+    return {'message': f"Change name db from {old} to {new}"}

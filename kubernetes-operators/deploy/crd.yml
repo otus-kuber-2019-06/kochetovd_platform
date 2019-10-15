@@ -39,3 +39,13 @@ spec:
               type: string
             storage_size:
               type: string
+          required:
+            - image
+            - database
+            - password
+            - storage_size
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
