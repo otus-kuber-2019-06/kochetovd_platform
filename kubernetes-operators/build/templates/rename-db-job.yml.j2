@@ -18,5 +18,5 @@ spec:
         command:
         - /bin/sh
         - -c
-        - "mysql  -u root -h {{ name }} -p{{ password }} -e \"CREATE DATABASE {{ database_new }}\" ; echo "create"; mysqldump -u root -h {{ name }} -p{{ password }} {{ database_old }} > /db.sql ; echo "dump"; mysqldump -u root -h {{ name }} -p{{ password }} {{ database_new }} < /db.sql ; echo "restore"; mysql  -u root -h {{ name }} -p{{ password }} -e \"DROP DATABASE {{ database_old }}\" "
+        - 'mysql  -u root -h {{ name }} -p{{ password }} -e "CREATE DATABASE \`{{ database_new }}\`;"; echo "create"; mysqldump -u root -h {{ name }} -p{{ password }} {{ database_old }} > /db.sql ; echo "dump"; mysql -u root -h {{ name }} -p{{ password }} {{ database_new }} < /db.sql ; echo "restore"; mysql  -u root -h {{ name }} -p{{ password }} -e "DROP DATABASE \`{{ database_old }}\`;"; echo "Drop" '
 

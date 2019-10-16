@@ -15,5 +15,5 @@ spec:
       serviceAccountName: mysql-operator
       containers:
         - name: operator
-          image: "dkochetov/kubernetesoperators:0.2"
+          image: "dkochetov/kubernetesoperators:0.3"
           imagePullPolicy: "Always"

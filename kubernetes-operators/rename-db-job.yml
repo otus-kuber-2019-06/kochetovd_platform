@@ -18,5 +18,5 @@ spec:
         command:
         - /bin/sh
         - -c
-        - "mysql  -u root -h mysql-instance -potuspassword -e \"CREATE DATABASE 'otus-database-test'\" ; echo \"create\"; mysqldump -u root -h mysql-instance -potuspassword otus-database > /db.sql ; echo \"dump\"; mysqldump -u root -h mysql-instance -potuspassword otus-database-test < /db.sql ; echo \"restore\"; mysql  -u root -h mysql-instance -potuspassword -e \"DROP DATABASE otus-database\" "
+        - 'mysql  -u root -h mysql-instance -potuspassword -e "CREATE DATABASE \`otus-database-test\`; "; echo "create"; mysqldump -u root -h mysql-instance -potuspassword otus-database > /db.sql ; echo "dump"; mysql -u root -h mysql-instance -potuspassword otus-database-test < /db.sql ; echo "restore"; mysql -u root -h mysql-instance -potuspassword -e "DROP DATABASE \`otus-database\`;" '
 
