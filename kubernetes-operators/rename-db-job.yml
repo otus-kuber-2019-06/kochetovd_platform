@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: default
+  name: renamedb-mysql-instance-job
+  labels:
+    usage: renamedb-mysql-instance-job
+spec:
+  template:
+    metadata:
+      name: renamedb-mysql-instance-cronjob
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: renamedb-mysql-instance
+        image: mysql:5.7
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - 'mysql  -u root -h mysql-instance -potuspassword -e "CREATE DATABASE \`otus-database-test\`; "; echo "create"; mysqldump -u root -h mysql-instance -potuspassword otus-database > /db.sql ; echo "dump"; mysql -u root -h mysql-instance -potuspassword otus-database-test < /db.sql ; echo "restore"; mysql -u root -h mysql-instance -potuspassword -e "DROP DATABASE \`otus-database\`;" '
+
