@@ -397,6 +397,162 @@ Events:
 
 
 
+<br><br>
+## Домашнее задание 7
+- Создал манифест для CustomResource Mysql `deploy/cr.yml`
+- Создал манифест для CRD для ресурса Mysql `deploy/crd.yml`
+- В описание CRD добавил поля requires для указания обязательных полей
+- Подготовил MySQL контроллер `kubernetes-operators/build/mysql-operator.py`
+- Проверил работу контроллера - Запустил контроллер `kopf run mysql-operator.py`, Создал CR, Заполнил БД, Удалил CR, Снова создал CR, Проверил что БД восстановилась
+```
+$ kubectl get pods
+NAME                               READY   STATUS      RESTARTS   AGE
+backup-mysql-instance-job-nj7xn    0/1     Completed   0          2m9s
+mysql-instance-58ccc56f84-99gj5    1/1     Running     0          76s
+restore-mysql-instance-job-x9fwz   0/1     Completed   3          76s
 
+$ kubectl get job
+NAME                         COMPLETIONS   DURATION   AGE
+backup-mysql-instance-job    1/1           2s         2m21s
+restore-mysql-instance-job   1/1           43s        88s
 
+$ export MYSQLPOD=$(kubectl get pods -l app=mysql-instance -o jsonpath="{.items[*].metadata.name}")
 
+$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "select * from test;" otus-database
+mysql: [Warning] Using a password on the command line interface can be insecure.
++----+-------------+
+| id | name        |
++----+-------------+
+|  1 | some data   |
+|  2 | some data-2 |
++----+-------------+
+```
+
+### Задание со *
+1) Исправить контроллер, чтобы он писал в status subresource
+В функцию `mysql_on_create` добавил код в конце
+```
+    if created_backup_pv:
+        kopf.event(body, type='Normal', reason='Logging', message="mysql created with created backup-pv ")
+        return {'Message': "mysql created with created backup-pv"}
+    else:
+        kopf.event(body, type='Normal', reason='Logging', message="mysql created without created backup-pv,  backup-pv exist ")
+        return {'Message': "mysql created without created backup-pv,  backup-pv exist"}
+```
+Также изменил создание PV для backup для установки флага успешности создания PV
+```
+    created_backup_pv = True
+    # Cоздаем PVC и PV для бэкапов:
+    try:
+        backup_pv = render_template('backup-pv.yml.j2', {'name': name})
+        api = kubernetes.client.CoreV1Api()
+        api.create_persistent_volume(backup_pv)
+    except kubernetes.client.rest.ApiException:
+        created_backup_pv = False
+```
+Функция kopf.event создает сообщения для события kubernetes для объекта.
+Из документации kopf: "Все, что возвращается из любого обработчика, сохраняется в статусе объекта под идентификатором этого обработчика (который по умолчанию является именем функции)." Поэтому добавил в функцию mysql_on_create возврат сообщения. Получили следующие результаты:
+При первом создании CR:
+```
+Status:
+  Kopf:
+  mysql_on_create:
+    Message:  mysql created with created backup-pv
+Events:
+  Type    Reason   Age   From  Message
+  ----    ------   ----  ----  -------
+  Normal  Logging  2s    kopf  Handler 'mysql_on_create' succeeded.
+  Normal  Logging  2s    kopf  All handlers succeeded for creation.
+  Normal  Logging  2s    kopf  mysql created with created backup-pv
+```
+
+При повторном создании
+```
+Status:
+  Kopf:
+  mysql_on_create:
+    Message:  mysql created without created backup-pv,  backup-pv exist
+Events:
+  Type    Reason   Age   From  Message
+  ----    ------   ----  ----  -------
+  Normal  Logging  3s    kopf  Handler 'mysql_on_create' succeeded.
+  Normal  Logging  3s    kopf  mysql created without created backup-pv,  backup-pv exist
+  Normal  Logging  3s    kopf  All handlers succeeded for creation.
+```
+
+2) Добавить в контроллер логику обработки изменений CR
+Реализовал изменение имени БД в mysql. Добавил декоратор:
+```
+@kopf.on.field('otus.homework', 'v1', 'mysqls', field='spec.database')
+def mysql_change_db_name(body, old, new, **kwargs):
+    name = body['metadata']['name']
+    image = body['spec']['image']
+    password = body['spec']['password']
+
+    renamedb_job = render_template('rename-db-job.yml.j2', {'name': name,'image': image,'password': password,'database_old': old, 'database_new': new})
+    api = kubernetes.client.BatchV1Api()
+    api.create_namespaced_job('default', renamedb_job)
+    wait_until_job_end(f"renamedb-{name}-job")
+    return {'message': f"Change name db from {old} to {new}"}
+```
+Функция mysql_change_db_name вызывает при изменении поля spec.database объекта Mysql. В данной функции получаются текущие поля объета, затем из шаблона генерируется манифест для Job по изменения имени БД, этот манифест применяется, ожидается его завершения выполнения и в status объекта CR возвращается сообщение.
+Сначала у нас есть заполненная БД otus-database
+```
+$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "show databases;"
+mysql: [Warning] Using a password on the command line interface can be insecure.
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| otus-database      |
+| performance_schema |
+| sys                |
++--------------------+
+
+$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "select * from test;" otus-database
+mysql: [Warning] Using a password on the command line interface can be insecure.
++----+-------------+
+| id | name        |
++----+-------------+
+|  1 | some data   |
+|  2 | some data-2 |
++----+-------------+
+```
+Изменили в манифесте deploy/cr.yaml имя БД на  otus-database-test, применили манифест. Получили сообщение в status CR:
+```
+Status:
+  Kopf:
+  mysql_change_db_name/spec.database:
+    Message:  Change name db from otus-database to otus-database-test
+  mysql_on_create:
+    Message:  mysql created with created backup-pv
+```
+И следущие состояние в mysql
+```
+$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "show databases;"
+mysql: [Warning] Using a password on the command line interface can be insecure.
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| otus-database-test |
+| performance_schema |
+| sys                |
++--------------------+
+
+$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "select * from test;" otus-database
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1049 (42000): Unknown database 'otus-database'
+command terminated with exit code 1
+
+$ kubectl exec -it $MYSQLPOD -- mysql -potuspassword -e "select * from test;" otus-database-test
+mysql: [Warning] Using a password on the command line interface can be insecure.
++----+-------------+
+| id | name        |
++----+-------------+
+|  1 | some data   |
+|  2 | some data-2 |
++----+-------------+
+```
