@@ -1,0 +1,9 @@
+dependencies:
+- name: frontend
+  repository: file://../frontend
+  version: 0.1.0
+- name: rabbitmq
+  repository: file://../rabbitmq
+  version: 0.1.0
+digest: sha256:4d9e3dab1ba8598c107ed33230edd80c24724cb9aa3b73cf1d126317fec8b066
+generated: "2019-09-26T13:08:40.725131504+03:00"
