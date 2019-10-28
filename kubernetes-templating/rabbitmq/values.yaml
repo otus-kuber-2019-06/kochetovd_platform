@@ -1,0 +1,11 @@
+image:
+  tag: 3.6.8
+
+replicas: 1
+
+service:
+  port: 5672
+  targetPort: 5672
+
+
+
