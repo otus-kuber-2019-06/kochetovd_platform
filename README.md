@@ -1209,4 +1209,132 @@ Key                        Value
 ---                        -----
 revocation_time            1572334476
 revocation_time_rfc3339    2019-10-29T07:34:36.102254302Z
+
+
+
+
+
+## Домашние задание 11
+
+
+$  kubectl get pods -n istio-reddit
+NAME                                    READY   STATUS    RESTARTS   AGE
+comment-75998f4f65-zqvsk                2/2     Running   0          13m
+istio-reddit-mongodb-6b89798d84-fjsj7   2/2     Running   0          13m
+post-647b568657-fs2mh                   2/2     Running   0          163m
+ui-69bc95c8b7-5492t                     2/2     Running   0          163m
+ui-69bc95c8b7-wdpqr                     2/2     Running   0          13m
+ui-69bc95c8b7-xsvqq                     2/2     Running   0          163m
+
+$ kubectl get gateway -n istio-reddit
+NAME             AGE
+reddit-gateway   7s
+
+
+
+$ kubectl get vs -A
+NAMESPACE      NAME     GATEWAYS           HOSTS   AGE
+istio-reddit   reddit   [reddit-gateway]   [*]     36s
+
+
+
+
+$ kubectl get svc istio-ingressgateway -n istio-system
+NAME                   TYPE           CLUSTER-IP    EXTERNAL-IP    PORT(S)                                                                                                                                      AGE
+istio-ingressgateway   LoadBalancer   10.12.0.155   34.66.50.173   15020:30462/TCP,80:31380/TCP,443:31390/TCP,31400:31400/TCP,15029:31516/TCP,15030:30133/TCP,15031:31588/TCP,15032:31988/TCP,15443:32745/TCP   3h2m
+
+
+
+
+$ kubectl get canary -n istio-reddit
+NAME   STATUS         WEIGHT   LASTTRANSITIONTIME
+ui     Initializing   0        2019-11-25T17:30:16Z
+
+
+$ kubectl describe canary ui -n istio-reddit
+...
+Events:
+  Type     Reason  Age   From     Message
+  ----     ------  ----  ----     -------
+  Warning  Synced  77s   flagger  Halt advancement ui-primary.istio-reddit waiting for rollout to finish: 0 out of 3 new replicas have been updated
+  Warning  Synced  47s   flagger  Halt advancement ui-primary.istio-reddit waiting for rollout to finish: 1 of 3 updated replicas are available
+  Normal   Synced  17s   flagger  Initialization done! ui.istio-reddit
+
+
+
+$ kubectl get pods -n istio-reddit
+NAME                                    READY   STATUS    RESTARTS   AGE
+comment-75998f4f65-zqvsk                2/2     Running   0          23m
+istio-reddit-mongodb-6b89798d84-fjsj7   2/2     Running   0          23m
+post-647b568657-fs2mh                   2/2     Running   0          173m
+ui-primary-d897cf7f9-c7fvr              2/2     Running   0          71s
+ui-primary-d897cf7f9-g4cxq              2/2     Running   0          71s
+ui-primary-d897cf7f9-hdpcf              2/2     Running   0          71s
+
+
+$ kubectl describe canary ui -n istio-reddit
+...
+Events:
+  Type     Reason  Age                    From     Message
+  ----     ------  ----                   ----     -------
+  Warning  Synced  29m                    flagger  Halt advancement ui-primary.istio-reddit waiting for rollout to finish: 0 out of 3 new replicas have been updated
+  Warning  Synced  28m                    flagger  Halt advancement ui-primary.istio-reddit waiting for rollout to finish: 1 of 3 updated replicas are available
+  Normal   Synced  28m                    flagger  Initialization done! ui.istio-reddit
+  Normal   Synced  6m53s                  flagger  New revision detected! Scaling up ui.istio-reddit
+  Normal   Synced  6m23s                  flagger  Starting canary analysis for ui.istio-reddit
+  Normal   Synced  6m23s                  flagger  Advance ui.istio-reddit canary weight 5
+  Warning  Synced  3m23s (x6 over 5m53s)  flagger  Halt advancement no values found for metric request-success-rate probably ui.istio-reddit is not receiving traffic
+  Warning  Synced  83s (x4 over 2m53s)    flagger  Halt ui.istio-reddit advancement external check load-test failed Post http://flagger-loadtester.test/: dial tcp: lookup flagger-loadtester.test on 10.12.0.10:53: no such host
+  Warning  Synced  53s                    flagger  Rolling back ui.istio-reddit failed checks threshold reached 10
+  Warning  Synced  53s                    flagger  Canary failed! Scaling down ui.istio-reddit
+
+
+
+$ kubectl get pods -n istio-reddit
+NAME                                    READY   STATUS    RESTARTS   AGE
+comment-75998f4f65-zqvsk                2/2     Running   0          53m
+flagger-loadtester-655d8987d-g6x5n      2/2     Running   0          5m
+istio-reddit-mongodb-6b89798d84-fjsj7   2/2     Running   0          53m
+post-647b568657-fs2mh                   2/2     Running   0          3h22m
+ui-88b57b7d9-zr5z8                      2/2     Running   0          19s
+ui-primary-d897cf7f9-c7fvr              2/2     Running   0          30m
+ui-primary-d897cf7f9-g4cxq              2/2     Running   0          30m
+ui-primary-d897cf7f9-hdpcf              2/2     Running   0          30m
+
+
+
+$ kubectl describe canary ui -n istio-reddit
+...
+Events:
+  Type     Reason  Age                From     Message
+  ----     ------  ----               ----     -------
+  Warning  Synced  9m36s              flagger  Halt advancement ui-primary.istio-reddit waiting for rollout to finish: 0 out of 1 new replicas have been updated
+  Normal   Synced  9m6s               flagger  Initialization done! ui.istio-reddit
+  Normal   Synced  6m36s              flagger  New revision detected! Scaling up ui.istio-reddit
+  Normal   Synced  6m6s               flagger  Starting canary analysis for ui.istio-reddit
+  Normal   Synced  6m6s               flagger  Advance ui.istio-reddit canary weight 5
+  Normal   Synced  5m36s              flagger  Advance ui.istio-reddit canary weight 10
+  Normal   Synced  5m6s               flagger  Advance ui.istio-reddit canary weight 15
+  Normal   Synced  4m36s              flagger  Advance ui.istio-reddit canary weight 20
+  Normal   Synced  4m6s               flagger  Advance ui.istio-reddit canary weight 25
+  Normal   Synced  3m36s              flagger  Advance ui.istio-reddit canary weight 30
+  Normal   Synced  6s (x7 over 3m6s)  flagger  (combined from similar events): Promotion completed! Scaling down ui.istio-reddit
+
+
+$ kubectl get pods -n istio-reddit
+NAME                                    READY   STATUS    RESTARTS   AGE
+comment-75998f4f65-zqvsk                2/2     Running   0          81m
+flagger-loadtester-655d8987d-g6x5n      2/2     Running   0          32m
+istio-reddit-mongodb-6b89798d84-fjsj7   2/2     Running   0          81m
+post-647b568657-fs2mh                   2/2     Running   0          3h50m
+ui-primary-7595576687-7r46d             2/2     Running   0          2m7s
+
+$  kubectl get canaries -n istio-reddit
+NAME   STATUS      WEIGHT   LASTTRANSITIONTIME
+ui     Succeeded   0        2019-11-25T18:27:28Z
+
+
+
+
+
 ```
