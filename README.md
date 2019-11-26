@@ -1506,6 +1506,14 @@ REVISION	UPDATED                 	STATUS    	CHART       	APP VERSION	DESCRIPTIO
 
 ### Установка Istio
 ```
+curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.3.3 sh -`
+cd istio-1.3.3/
+helm repo add istio.io https://storage.googleapis.com/istio-release/releases/1.3.3/charts/
+helm install install/kubernetes/helm/istio-init --name istio-init --namespace istio-system
+helm install install/kubernetes/helm/istio --name istio --namespace istio-system
+```
+- Проверка установки
+```
 $ kubectl get pods -n istio-system
 NAME                                     READY   STATUS    RESTARTS   AGE
 flagger-55545798cb-q4klp                 1/1     Running   0          16h
@@ -1517,6 +1525,18 @@ istio-sidecar-injector-d8856c48f-529n8   1/1     Running   0          18h
 istio-telemetry-675c94446f-jnl2z         2/2     Running   0          16h
 prometheus-7d7b9f7844-tdwrh              1/1     Running   0          18h
 ```
+
+### Установка Flagger
+```
+helm repo add flagger https://flagger.app
+kubectl apply -f https://raw.githubusercontent.com/weaveworks/flagger/master/artifacts/flagger/crd.yaml
+helm upgrade -i flagger flagger/flagger \
+--namespace=istio-system \
+--set crd.create=false \
+--set meshProvider=istio \
+--set metricsServer=http://prometheus:9090
+```
+
 ### Репозиторий | Namespaces
 - В дирректории ./namespaces репы reddit-flux создадим манифест с описанием нового namespace`а.
 ```
