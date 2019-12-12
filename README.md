@@ -95,6 +95,196 @@ The Deployment "web" is invalid: spec.strategy.rollingUpdate.maxUnavailable: Inv
 ```
 
 
+<br><br>
+## Домашнее задание 5
+
+### Обычное домашнее задание
+- Подготовил кофиг для кластера с установкой опции VolumeSnapshatDataSource=true  `cluster/cluster.yaml`
+- Выполнил создание кластера с указанием конфига
+`kind create cluster --config cluster/cluster.yaml`
+- установил CSI Hostpath Driver https://github.com/kubernetes-csi/csi-driver-host-path выполнив скрипт 
+`deploy/kubernetes-1.15/deploy-hostpath.sh`
+- Создал StorageClass csi-hostpath-sc hw/storage_class.yml
+`kubectl apply -f hw/01-storage_class.yml`
+- Создал объект PVC c именем storage-pvc и StorageClass csi-hostpath-sc
+`kubectl apply -f hw/02-pvc_storageclass.yml`
+- Создал объект Pod c именем storage-pod и монтирующем pvc storage-pvc в каталог /data
+`kubectl apply -f hw/03-pod_storaclass.yml`
+
+
+
+### Задание со *
+- Развернул кластер в GCP, состоящий из 3 ВМ. Развернул кластер kubernetes с помощью kubespray
+- Создал доп ВМ для хранилища с дополнительным диском
+- Добавил ко всем ВМ дополнительный сетевой интерфейс
+- На машине для iscsi установил targetcli-fb
+- Создал LVM
+```
+root@instance-4:~# pvcreate /dev/sdb1 
+  Physical volume "/dev/sdb1" successfully created.
+root@instance-4:~# vgcreate VolGroup00 /dev/sdb1 
+  Volume group "VolGroup00" successfully created
+root@instance-4:~# lvcreate -L 3G -n kvmVM VolGroup00
+  Logical volume "kvmVM" created.
+```
+- Создание iscsi хранилище
+```
+root@instance-4:~# targetcli
+targetcli shell version 2.1.fb43
+Copyright 2011-2013 by Datera, Inc and others.
+For help on commands, type 'help'.
+```
+Создал блочное устройство в бэксторе
+```
+/> /backstores/block create storage1 /dev/mapper/VolGroup00-kvmVM 
+Created block storage object storage1 using /dev/mapper/VolGroup00-kvmVM.
+```
+Создал iscsi таргет
+```
+/> /iscsi create 
+Created target iqn.2003-01.org.linux-iscsi.instance-4.x8664:sn.37b09c000f75.
+Created TPG 1.
+Global pref auto_add_default_portal=true
+Created default portal listening on all IPs (0.0.0.0), port 3260.
+```
+Перейдем в иерархии targetcli на уровень tpg1 и установим параметры авторизации
+```
+iscsi/iqn.20...9c000f75/tpg1> set parameter AuthMethod=None
+Parameter AuthMethod is now 'None'.
+/iscsi/iqn.20...9c000f75/tpg1> set attribute authentication=0
+Parameter authentication is now '0'.
+```
+Укажем iqn имя инициатора, который будет иметь право подключаться к таргету.
+```
+/iscsi/iqn.20...9c000f75/tpg1> acls/ create iqn.2005-03.org.open-iscsi:f72465cabb26
+Created Node ACL for iqn.2005-03.org.open-iscsi:f72465cabb26
+/iscsi/iqn.20...9c000f75/tpg1> acls/ create iqn.2005-03.org.open-iscsi:b5ecfb87ba70
+Created Node ACL for iqn.2005-03.org.open-iscsi:b5ecfb87ba70
+```
+Создадим LUN на основе объекта хранилища в бэксторе
+```
+/iscsi/iqn.20...9c000f75/tpg1> luns/ create /backstores/block/storage1 
+Created LUN 0.
+Created LUN 0->0 mapping in node ACL iqn.2005-03.org.open-iscsi:b5ecfb87ba70
+Created LUN 0->0 mapping in node ACL iqn.2005-03.org.open-iscsi:f72465cabb26
+```
+Укажем IP-адрес, который будет слушать таргет. 
+```
+/iscsi/iqn.20...9c000f75/tpg1> portals/ create 10.127.0.13 3261
+Created network portal 10.127.0.13:3261.
+```
+Посмотрим иерархию, в виде которой представлен таргет
+```
+/> ls
+o- / ......................................................................................................................... [...]
+  o- backstores .............................................................................................................. [...]
+  | o- block .................................................................................................. [Storage Objects: 1]
+  | | o- storage1 ..................................................... [/dev/mapper/VolGroup00-kvmVM (3.0GiB) write-thru activated]
+  | o- fileio ................................................................................................. [Storage Objects: 0]
+  | o- pscsi .................................................................................................. [Storage Objects: 0]
+  | o- ramdisk ................................................................................................ [Storage Objects: 0]
+  o- iscsi ............................................................................................................ [Targets: 1]
+  | o- iqn.2003-01.org.linux-iscsi.instance-4.x8664:sn.7fe91425ce4b ...................................................... [TPGs: 1]
+  |   o- tpg1 ............................................................................................... [no-gen-acls, no-auth]
+  |     o- acls .......................................................................................................... [ACLs: 2]
+  |     | o- iqn.2005-03.org.open-iscsi:b5ecfb87ba70 .............................................................. [Mapped LUNs: 1]
+  |     | | o- mapped_lun0 .............................................................................. [lun0 block/storage1 (rw)]
+  |     | o- iqn.2005-03.org.open-iscsi:f72465cabb26 .............................................................. [Mapped LUNs: 1]
+  |     |   o- mapped_lun0 .............................................................................. [lun0 block/storage1 (rw)]
+  |     o- luns .......................................................................................................... [LUNs: 1]
+  |     | o- lun0 .................................................................. [block/storage1 (/dev/mapper/VolGroup00-kvmVM)]
+  |     o- portals .................................................................................................... [Portals: 3]
+  |       o- 0.0.0.0:3260 ..................................................................................................... [OK]
+  |       o- 10.127.0.13:3261 ................................................................................................. [OK]
+  |       o- 10.127.0.6:3261 .................................................................................................. [OK]
+  o- loopback ......................................................................................................... [Targets: 0]
+  o- vhost ............................................................................................................ [Targets: 0]
+```
+- Создаим PersistentVolume `kubectl apply -f kubernetes-storage/iscsi/pv.yaml`
+- Создаим PersistentVolumeClaim `kubectl apply -f kubernetes-storage/iscsi/pvc.yaml`
+- Создаим Pod `kubectl apply -f kubernetes-storage/iscsi/pod.yaml`
+- Подключимся к pod и запишем данные в /data/file
+```
+root@instance-1:~# kubectl exec -ti  pod-iscsi bash
+root@pod-iscsi:/# cd /data/
+root@pod-iscsi:/data# echo "Hello World!" > file
+root@pod-iscsi:/data# cat file 
+Hello World!
+```
+- Сделаем снапшот LVM раздела 
+```
+root@instance-4:~# lvcreate --size 3G --snapshot --name kvmVM_snap /dev/VolGroup00/kvmVM
+  Using default stripesize 64.00 KiB.
+  Logical volume "kvmVM_snap" created.
+root@instance-4:~# lvs
+  LV         VG         Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  kvmVM      VolGroup00 owi-aos--- 3.00g
+  kvmVM_snap VolGroup00 swi-a-s--- 3.00g      kvmVM  0.00
+```
+- Удалим данные, pod, pvc, pv, lvm из iscsi
+```
+root@instance-1:~# kubectl exec -ti  pod-iscsi bash
+root@pod-iscsi:/# rm /data/*
+
+root@instance-1:~# kubectl delete pods --all
+pod "pod-iscsi" deleted
+root@instance-1:~# kubectl delete pvc --all
+persistentvolumeclaim "pvc-iscsi" deleted
+root@instance-1:~# kubectl delete pv --all
+persistentvolume "pv-iscsi" deleted
+
+root@instance-4:~# targetcli 
+targetcli shell version 2.1.fb43
+Copyright 2011-2013 by Datera, Inc and others.
+For help on commands, type 'help'.
+/> backstores/block/ delete storage1 
+```
+- Восстаналиваем lvm из снапшота
+```
+root@instance-4:~# lvconvert --merge /dev/VolGroup00/kvmVM_snap 
+  Merging of volume VolGroup00/kvmVM_snap started.
+  VolGroup00/kvmVM: Merged: 100.00%
+Deleted storage object storage1.
+```
+Снова добавляем раздел в хранилище iscsi
+```
+root@instance-4:~# targetcli 
+targetcli shell version 2.1.fb43
+Copyright 2011-2013 by Datera, Inc and others.
+For help on commands, type 'help'.
+/> /backstores/block create storage1 /dev/mapper/VolGroup00-kvmVM 
+Created block storage object storage1 using /dev/mapper/VolGroup00-kvmVM.
+/> cd iscsi/iqn.2003-01.org.linux-iscsi.instance-4.x8664:sn.7fe91425ce4b/tpg1/
+/iscsi/iqn.20...1425ce4b/tpg1> luns/ create /backstores/block/storage1 
+Created LUN 0.
+Created LUN 0->0 mapping in node ACL iqn.2005-03.org.open-iscsi:b5ecfb87ba70
+Created LUN 0->0 mapping in node ACL iqn.2005-03.org.open-iscsi:f72465cabb26
+/iscsi/iqn.20...1425ce4b/tpg1> exit
+Global pref auto_save_on_exit=true
+Last 10 configs saved in /etc/rtslib-fb-target/backup.
+Configuration saved to /etc/rtslib-fb-target/saveconfig.json
+```
+- Создадим pv, pvc, pod. Зайдем в pod и проверим данные
+```
+root@instance-1:~# kubectl get pods
+NAME        READY   STATUS    RESTARTS   AGE
+pod-iscsi   1/1     Running   0          23s
+root@instance-1:~# kubectl exec -ti pod-iscsi bash
+root@pod-iscsi:/# cd /data/
+root@pod-iscsi:/data# ls -al
+total 28
+drwxr-xr-x 3 root root  4096 Oct 23 12:05 .
+drwxr-xr-x 1 root root  4096 Oct 23 12:11 ..
+-rw-r--r-- 1 root root    13 Oct 23 12:05 file
+drwx------ 2 root root 16384 Oct 23 12:00 lost+found
+root@pod-iscsi:/data# cat file 
+Hello World!
+```
+- Данные на месте
+
+
+
+
 
 <br><br>
 ## Домашнее задание 6
@@ -365,6 +555,7 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 |  2 | some data-2 |
 +----+-------------+
 ```
+
 
 
 

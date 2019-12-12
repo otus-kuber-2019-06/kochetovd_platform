@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-iscsi
+spec:
+  containers:
+  - name: iscsi-pod
+    image: ubuntu
+    command: ["/bin/bash", "-ec", "while :; do sleep 2; done"]
+    volumeMounts:
+    - mountPath: "/data"
+      name: volume-iSCSI
+  volumes:
+  - name: volume-iscsi
+    persistentVolumeClaim:
+      claimName: pvc-iscsi
